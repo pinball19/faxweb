@@ -2,39 +2,182 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>FAX送受信（会社専用）</title>
+  <title>Fax Web - ダッシュボード</title>
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <!-- PDFのサムネイル生成用 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
   <style>
-    /* プレビュー画像・キャンバスのサイズ調整 */
-    #filePreview img, #filePreview canvas {
+    /* Apple公式サイト風 シンプルデザイン */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+                   "Roboto", "Segoe UI", "Noto Sans Japanese", sans-serif;
+      color: #333;
+      background-color: #fff;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #eee;
+    }
+    header h1 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    header button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #007aff;
+      color: #fff;
+      cursor: pointer;
+    }
+    header button:hover {
+      background-color: #005bb5;
+    }
+
+    main {
+      max-width: 800px;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
+    }
+
+    .section-title {
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.5rem;
+    }
+
+    .info-row {
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    .info-row label {
+      display: block;
+      margin-top: 0.75rem;
+      font-weight: 500;
+    }
+    .info-row input[type="text"],
+    .info-row input[type="file"] {
+      width: 100%;
+      max-width: 400px;
+      padding: 0.5rem;
+      margin-top: 0.25rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    .info-row button {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #007aff;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .info-row button:hover {
+      background-color: #005bb5;
+    }
+
+    #filePreview {
+      margin-top: 0.5rem;
+    }
+    #filePreview img,
+    #filePreview canvas {
       max-width: 200px;
       max-height: 200px;
       margin-top: 10px;
+      border: 1px solid #ddd;
+    }
+
+    /* 送受信一覧 */
+    .fax-item {
+      border-bottom: 1px solid #eee;
+      padding: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .fax-item strong {
+      font-weight: 600;
+    }
+    .fax-item img {
+      max-width: 120px;
+      margin-top: 0.5rem;
+      display: block;
+    }
+    .fax-item a {
+      color: #007aff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .fax-item a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      text-align: center;
+      color: #999;
+      font-size: 0.8rem;
+      margin-top: 2rem;
+      padding-bottom: 2rem;
     }
   </style>
 </head>
 <body>
-  <h1>📠 FAX送受信（会社専用）</h1>
-  <h3>現在の会社: <span id="currentCompany"></span></h3>
-  <button onclick="logout()">🔲 ログアウト</button>
 
-  <!-- 送信機能 -->
-  <h1>📠 FAX送信</h1>
-  <label>送信先連絡先（FAX番号／LINE ID／メールアドレス）:</label>
-  <input type="text" id="recipientContact" oninput="findRecipientByContact()">
-  <h3 id="recipientCompanyName">送信先会社名: （未入力）</h3>
-  <input type="file" id="fileInput" accept="image/*,application/pdf">
-  <div id="filePreview"></div>
-  <button onclick="sendFax()">📤 送信</button>
+  <!-- ヘッダー -->
+  <header>
+    <h1>Fax Web</h1>
+    <button onclick="logout()">ログアウト</button>
+  </header>
 
-  <!-- 受信・送信一覧（最新順） -->
-  <h1>📥 送受信一覧（最新順）</h1>
-  <div id="faxList"></div>
+  <!-- メインコンテンツ -->
+  <main>
+    <div class="info-row">
+      <p><strong>現在ログイン中:</strong> <span id="currentCompany"></span></p>
+    </div>
+
+    <!-- 送信機能 -->
+    <h2 class="section-title">FAXを送信する</h2>
+    <div class="info-row">
+      <label for="recipientContact">宛先（FAX番号／LINE ID／メールアドレス）</label>
+      <input type="text" id="recipientContact" placeholder="例: 03-xxxx-xxxx または line_id123 など" oninput="findRecipientByContact()">
+
+      <p id="recipientCompanyName" style="margin-top:0.5rem; font-size:0.9rem; color:#555;">
+        送信先会社名: （未入力）
+      </p>
+
+      <label for="fileInput">送付ファイル</label>
+      <input type="file" id="fileInput" accept="image/*,application/pdf">
+      <div id="filePreview"></div>
+
+      <button onclick="sendFax()">送信</button>
+    </div>
+
+    <!-- 送受信一覧 -->
+    <h2 class="section-title">送受信一覧（最新順）</h2>
+    <div id="faxList"></div>
+  </main>
+
+  <footer>
+    <p>© 2023 Fax Web</p>
+  </footer>
 
   <script>
     // ================================
@@ -56,13 +199,12 @@
     const db2 = firebase.firestore();
     const storage = firebase.storage();
 
-    // グローバル変数：受信・送信メッセージ、ログイン会社名
     let receivedFaxes = [];
     let sentFaxes = [];
     let currentCompany = "";
 
     // ================================
-    // ページ読み込み時にログイン状態をチェック
+    // ページ読み込み時
     // ================================
     window.onload = function() {
       const companyId = sessionStorage.getItem("loggedInCompanyId");
@@ -75,6 +217,7 @@
       }
       currentCompany = companyName;
       document.getElementById("currentCompany").textContent = companyName;
+
       loadFaxMessages(companyName);
     };
 
@@ -88,13 +231,13 @@
     }
 
     // ================================
-    // 送信先会社の検索（単一入力で複数条件）
+    // 送信先会社の検索
     // ================================
     function findRecipientByContact() {
       const contactInput = document.getElementById("recipientContact").value.trim();
       const companyNameElem = document.getElementById("recipientCompanyName");
 
-      if(!contactInput){
+      if (!contactInput) {
         companyNameElem.textContent = "送信先会社名: （未入力）";
         return;
       }
@@ -124,7 +267,7 @@
     }
 
     // ================================
-    // ファイルプレビュー（サムネイル生成）
+    // ファイル選択時のプレビュー
     // ================================
     document.getElementById("fileInput").addEventListener("change", function(event) {
       const file = event.target.files[0];
@@ -146,7 +289,6 @@
         fileReader.onload = function() {
           const typedarray = new Uint8Array(this.result);
           pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-            // 最初のページを取得
             pdf.getPage(1).then(function(page) {
               const viewport = page.getViewport({ scale: 1 });
               const canvas = document.createElement("canvas");
@@ -168,10 +310,10 @@
     });
 
     // ================================
-    // FAX送信処理
+    // FAX送信
     // ================================
     function sendFax() {
-      const senderName = currentCompany; // 送信元
+      const senderName = currentCompany;
       const recipientName = document
         .getElementById("recipientCompanyName")
         .textContent.replace("送信先会社名: ", "")
@@ -198,7 +340,6 @@
         })
         .then(() => {
           alert(`✅ ${recipientName} へ FAXを送信しました！`);
-          // 必要に応じてフォームをクリアする処理を追加してください
         })
         .catch((err) => {
           console.error("❌ 送信エラー:", err);
@@ -207,10 +348,10 @@
     }
 
     // ================================
-    // 受信・送信メッセージのリアルタイム更新（受信＋送信を統合）
+    // 受信・送信メッセージをリアルタイムで取得
     // ================================
     function loadFaxMessages(companyName) {
-      // 受信メッセージリスナー
+      // 受信メッセージ
       db2.collection("fax_messages")
         .where("recipient", "==", companyName)
         .orderBy("created_at", "desc")
@@ -227,7 +368,7 @@
           console.error("❌ 受信メッセージリスナー エラー:", error);
         });
 
-      // 送信メッセージリスナー
+      // 送信メッセージ
       db2.collection("fax_messages")
         .where("sender", "==", companyName)
         .orderBy("created_at", "desc")
@@ -245,10 +386,11 @@
         });
     }
 
-    // 受信・送信メッセージをマージして表示する
+    // ================================
+    // 送受信リストをマージして表示
+    // ================================
     function updateFaxList() {
       const allMessages = receivedFaxes.concat(sentFaxes);
-      // created_at が存在しない場合は 0 としてソート
       allMessages.sort((a, b) => {
         const aTime = a.created_at ? a.created_at.toDate().getTime() : 0;
         const bTime = b.created_at ? b.created_at.toDate().getTime() : 0;
@@ -258,20 +400,26 @@
       const faxList = document.getElementById("faxList");
       faxList.innerHTML = "";
       allMessages.forEach((data) => {
-        const timeStr = data.created_at ? data.created_at.toDate().toLocaleString() : "時間不明";
+        const timeStr = data.created_at
+          ? data.created_at.toDate().toLocaleString()
+          : "時間不明";
         let display = "";
         if (data.fileType === "application/pdf") {
-          display = `<a href="${data.fileUrl}" target="_blank">📄 PDFを開く</a>`;
+          display = `<a href="${data.fileUrl}" target="_blank">PDFを開く</a>`;
         } else {
-          display = `<img src="${data.fileUrl}" width="150">`;
+          display = `<img src="${data.fileUrl}">`;
         }
+
+        // 受信 or 送信 で表示を切り替え
+        const fromToLabel = (data.type === "受信")
+          ? `<strong>受信元:</strong> ${data.sender}<br><strong>受信先:</strong> ${data.recipient}`
+          : `<strong>送信元:</strong> ${data.sender}<br><strong>送信先:</strong> ${data.recipient}`;
+
         faxList.innerHTML += `
-          <div>
-            <strong>${data.type}元:</strong> ${data.type === "受信" ? data.sender : data.recipient}<br>
-            <strong>${data.type}先:</strong> ${data.type === "受信" ? data.recipient : data.sender}<br>
-            <strong>時間:</strong> ${timeStr}<br>
+          <div class="fax-item">
+            ${fromToLabel}<br>
+            <strong>時刻:</strong> ${timeStr}<br>
             ${display}
-            <hr>
           </div>
         `;
       });
