@@ -2,63 +2,26 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>🔑 会社ログイン</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <title>ログイン - FAX送受信</title>
 </head>
 <body>
-    <h2>🔑 会社ログイン</h2>
-    <label>ログイン ID:</label>
-    <input type="text" id="loginId">
+    <h1>📠 ログイン</h1>
+    <label>会社ID:</label>
+    <input type="text" id="companyId">
     <label>パスワード:</label>
     <input type="password" id="password">
-    <button onclick="login()">🚀 ログイン</button>
-
-    <h3 id="loginMessage"></h3>
+    <button onclick="login()">ログイン</button>
 
     <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBvANDKuDIMQiCh3DcO1CUFOoMMjiAHAfw",
-  authDomain: "faxweb-1250a.firebaseapp.com",
-  projectId: "faxweb-1250a",
-  storageBucket: "faxweb-1250a.firebasestorage.app",
-  messagingSenderId: "203122177163",
-  appId: "1:203122177163:web:5f7127523ad7fb364c508e",
-  measurementId: "G-72STGVJ94V"
-};
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-
         function login() {
-            const loginId = document.getElementById("loginId").value.trim();
-            const password = document.getElementById("password").value.trim();
-            const loginMessage = document.getElementById("loginMessage");
-
-            if (!loginId || !password) {
-                loginMessage.textContent = "❌ IDとパスワードを入力してください";
-                return;
+            const companyId = document.getElementById("companyId").value;
+            const password = document.getElementById("password").value;
+            if (companyId && password) {
+                sessionStorage.setItem("loggedInCompany", companyId);
+                window.location.href = "fax.html"; // 送受信ページに遷移
+            } else {
+                alert("会社IDとパスワードを入力してください。");
             }
-
-            db.collection("companies")
-              .where("loginId", "==", loginId)
-              .where("password", "==", password)
-              .get()
-              .then(snapshot => {
-                  if (snapshot.empty) {
-                      loginMessage.textContent = "❌ ログインに失敗しました";
-                  } else {
-                      snapshot.forEach(doc => {
-                          const companyData = doc.data();
-                          localStorage.setItem("selectedCompany", companyData.name);
-                          alert(`✅ ${companyData.name} にログインしました`);
-                          window.location.href = "fax_dashboard.html";
-                      });
-                  }
-              })
-              .catch(error => {
-                  console.error("❌ Firestore エラー:", error);
-                  loginMessage.textContent = "❌ ログインエラーが発生しました";
-              });
         }
     </script>
 </body>
