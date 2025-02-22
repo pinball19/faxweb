@@ -21,7 +21,6 @@
       color: #333;
       background-color: #fff;
     }
-
     header {
       display: flex;
       align-items: center;
@@ -46,13 +45,11 @@
     header button:hover {
       background-color: #005bb5;
     }
-
     main {
       max-width: 800px;
       margin: 1.5rem auto;
       padding: 0 1rem;
     }
-
     .section-title {
       font-size: 1.2rem;
       font-weight: 500;
@@ -61,7 +58,6 @@
       border-bottom: 1px solid #ddd;
       padding-bottom: 0.5rem;
     }
-
     .info-row {
       margin: 1rem 0;
       font-size: 0.95rem;
@@ -95,7 +91,6 @@
     .info-row button:hover {
       background-color: #005bb5;
     }
-
     #filePreview {
       margin-top: 0.5rem;
     }
@@ -106,8 +101,6 @@
       margin-top: 10px;
       border: 1px solid #ddd;
     }
-
-    /* 送受信一覧 */
     .fax-item {
       border-bottom: 1px solid #eee;
       padding: 1rem 0;
@@ -123,7 +116,7 @@
       border: 1px solid #ddd;
     }
     .fax-item canvas {
-      max-width: 120px; 
+      max-width: 120px;
       margin-top: 0.5rem;
       border: 1px solid #ddd;
       display: block;
@@ -138,7 +131,6 @@
     .fax-item a:hover {
       text-decoration: underline;
     }
-
     footer {
       text-align: center;
       color: #999;
@@ -165,8 +157,8 @@
     <!-- 送信機能 -->
     <h2 class="section-title">FAXを送信する</h2>
     <div class="info-row">
-      <label for="recipientContact">宛先（FAX番号／LINE ID／メールアドレス）</label>
-      <input type="text" id="recipientContact" placeholder="例: 03-xxxx-xxxx または line_id123 など" oninput="findRecipientByContact()">
+      <label for="recipientContact">宛先（FAX番号）</label>
+      <input type="text" id="recipientContact" placeholder="例: 03-xxxx-xxxx" oninput="findRecipientByContact()">
 
       <p id="recipientCompanyName" style="margin-top:0.5rem; font-size:0.9rem; color:#555;">
         送信先会社名: （未入力）
@@ -204,10 +196,8 @@
       };
       firebase.initializeApp(firebaseConfig);
     }
-
     const db2 = firebase.firestore();
     const storage = firebase.storage();
-
     let receivedFaxes = [];
     let sentFaxes = [];
     let currentCompany = "";
@@ -218,7 +208,6 @@
     window.onload = function() {
       const companyId = sessionStorage.getItem("loggedInCompanyId");
       const companyName = sessionStorage.getItem("loggedInCompanyName");
-
       if (!companyId || !companyName) {
         alert("ログインが必要です。");
         window.location.href = "index.html";
@@ -226,7 +215,6 @@
       }
       currentCompany = companyName;
       document.getElementById("currentCompany").textContent = companyName;
-
       loadFaxMessages(companyName);
     };
 
@@ -240,28 +228,22 @@
     }
 
     // ================================
-    // 送信先会社の検索
+    // 送信先会社の検索（FAX番号のみ）
     // ================================
     function findRecipientByContact() {
       const contactInput = document.getElementById("recipientContact").value.trim();
       const companyNameElem = document.getElementById("recipientCompanyName");
-
       if (!contactInput) {
         companyNameElem.textContent = "送信先会社名: （未入力）";
         return;
       }
-
       db2.collection("companies")
         .get()
         .then((snapshot) => {
           let matched = [];
           snapshot.forEach((doc) => {
             const data = doc.data();
-            if (
-              (data.faxNumber && data.faxNumber === contactInput) ||
-              (data.lineId && data.lineId === contactInput) ||
-              (data.email && data.email === contactInput)
-            ) {
+            if (data.faxNumber && data.faxNumber === contactInput) {
               matched.push(data.name);
             }
           });
@@ -283,9 +265,7 @@
       const previewDiv = document.getElementById("filePreview");
       previewDiv.innerHTML = "";
       if (!file) return;
-
       if (file.type.startsWith("image/")) {
-        // 画像の場合
         const reader = new FileReader();
         reader.onload = function(e) {
           const img = document.createElement("img");
@@ -294,7 +274,6 @@
         };
         reader.readAsDataURL(file);
       } else if (file.type === "application/pdf") {
-        // PDFの場合
         const fileReader = new FileReader();
         fileReader.onload = function() {
           const typedarray = new Uint8Array(this.result);
@@ -305,7 +284,6 @@
               const context = canvas.getContext("2d");
               canvas.height = viewport.height;
               canvas.width = viewport.width;
-
               page.render({
                 canvasContext: context,
                 viewport: viewport
@@ -324,17 +302,13 @@
     // ================================
     function sendFax() {
       const senderName = currentCompany;
-      const recipientName = document
-        .getElementById("recipientCompanyName")
-        .textContent.replace("送信先会社名: ", "")
-        .trim();
+      const recipientName = document.getElementById("recipientCompanyName")
+                              .textContent.replace("送信先会社名: ", "").trim();
       const fileInput = document.getElementById("fileInput").files[0];
-
       if (!recipientName || recipientName === "（未入力）" || !fileInput) {
         alert("送信先会社が特定できないか、ファイルが選択されていません。");
         return;
       }
-
       const storageRef = storage.ref().child(`fax_files/${Date.now()}_${fileInput.name}`);
       storageRef
         .put(fileInput)
@@ -361,7 +335,6 @@
     // 受信・送信メッセージをリアルタイムで取得
     // ================================
     function loadFaxMessages(companyName) {
-      // 受信メッセージ
       db2.collection("fax_messages")
         .where("recipient", "==", companyName)
         .orderBy("created_at", "desc")
@@ -378,7 +351,6 @@
           console.error("❌ 受信メッセージリスナー エラー:", error);
         });
 
-      // 送信メッセージ
       db2.collection("fax_messages")
         .where("sender", "==", companyName)
         .orderBy("created_at", "desc")
@@ -406,57 +378,43 @@
         const bTime = b.created_at ? b.created_at.toDate().getTime() : 0;
         return bTime - aTime;
       });
-
       const faxList = document.getElementById("faxList");
       faxList.innerHTML = "";
-
       allMessages.forEach((data) => {
         const timeStr = data.created_at
           ? data.created_at.toDate().toLocaleString()
           : "時間不明";
-
-        // 受信 or 送信 で表示文言を切り替え
         const fromToLabel = (data.type === "受信")
           ? `<strong>受信元:</strong> ${data.sender}<br><strong>受信先:</strong> ${data.recipient}`
           : `<strong>送信元:</strong> ${data.sender}<br><strong>送信先:</strong> ${data.recipient}`;
-
-        // 親要素を作成
         const itemDiv = document.createElement("div");
         itemDiv.classList.add("fax-item");
         itemDiv.innerHTML = `
           ${fromToLabel}<br>
           <strong>時刻:</strong> ${timeStr}
         `;
-
-        // サムネイル or 画像を表示する要素を作成
         const thumbnailContainer = document.createElement("div");
-
         if (data.fileType === "application/pdf") {
-          // PDFサムネイル生成
           renderPdfThumbnail(data.fileUrl, thumbnailContainer);
-          // PDFを開くリンク
           const pdfLink = document.createElement("a");
           pdfLink.href = data.fileUrl;
           pdfLink.target = "_blank";
           pdfLink.textContent = "PDFを開く";
           thumbnailContainer.appendChild(pdfLink);
         } else {
-          // 画像の場合
           const img = document.createElement("img");
           img.src = data.fileUrl;
           thumbnailContainer.appendChild(img);
         }
-
         itemDiv.appendChild(thumbnailContainer);
         faxList.appendChild(itemDiv);
       });
     }
 
     // ================================
-    // PDFのサムネイル生成用ヘルパー関数
+    // PDFのサムネイル生成用関数
     // ================================
     function renderPdfThumbnail(pdfUrl, container) {
-      // fetch でリモートPDFを取得して、arrayBuffer化
       fetch(pdfUrl)
         .then(res => res.arrayBuffer())
         .then(buffer => {
@@ -464,18 +422,16 @@
           return pdfjsLib.getDocument(typedarray).promise;
         })
         .then(pdf => {
-          // 1ページ目を取り出してcanvasに描画
           return pdf.getPage(1).then(page => {
-            const scale = 0.5; // 縮尺（大きいほど高解像度）
+            const scale = 0.5;
             const viewport = page.getViewport({ scale: scale });
             const canvas = document.createElement("canvas");
             const context = canvas.getContext("2d");
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-            return page.render({ canvasContext: context, viewport: viewport }).promise
-              .then(() => {
-                container.appendChild(canvas);
-              });
+            return page.render({ canvasContext: context, viewport: viewport }).promise.then(() => {
+              container.appendChild(canvas);
+            });
           });
         })
         .catch(err => {
