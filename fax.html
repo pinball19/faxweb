@@ -91,6 +91,25 @@
     .info-row button:hover {
       background-color: #005bb5;
     }
+    /* スピナー用 */
+    #spinner {
+      display: none;
+      margin-top: 1rem;
+      text-align: center;
+    }
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007aff;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
     #filePreview {
       margin-top: 0.5rem;
     }
@@ -168,7 +187,10 @@
       <input type="file" id="fileInput" accept="image/*,application/pdf">
       <div id="filePreview"></div>
 
-      <button onclick="sendFax()">送信</button>
+      <!-- 送信ボタン -->
+      <button id="sendButton" onclick="sendFax()">送信</button>
+      <!-- スピナー -->
+      <div id="spinner"><div class="spinner"></div></div>
     </div>
 
     <!-- 送受信一覧 -->
@@ -301,12 +323,18 @@
     // FAX送信
     // ================================
     function sendFax() {
+      // 送信中のスピナー表示と送信ボタン無効化
+      document.getElementById("spinner").style.display = "block";
+      document.getElementById("sendButton").disabled = true;
+
       const senderName = currentCompany;
       const recipientName = document.getElementById("recipientCompanyName")
                               .textContent.replace("送信先会社名: ", "").trim();
       const fileInput = document.getElementById("fileInput").files[0];
       if (!recipientName || recipientName === "（未入力）" || !fileInput) {
         alert("送信先会社が特定できないか、ファイルが選択されていません。");
+        document.getElementById("spinner").style.display = "none";
+        document.getElementById("sendButton").disabled = false;
         return;
       }
       const storageRef = storage.ref().child(`fax_files/${Date.now()}_${fileInput.name}`);
@@ -328,6 +356,11 @@
         .catch((err) => {
           console.error("❌ 送信エラー:", err);
           alert("送信に失敗しました");
+        })
+        .finally(() => {
+          // 処理完了後、スピナー非表示・ボタン有効化
+          document.getElementById("spinner").style.display = "none";
+          document.getElementById("sendButton").disabled = false;
         });
     }
 
@@ -350,7 +383,6 @@
         }, (error) => {
           console.error("❌ 受信メッセージリスナー エラー:", error);
         });
-
       db2.collection("fax_messages")
         .where("sender", "==", companyName)
         .orderBy("created_at", "desc")
