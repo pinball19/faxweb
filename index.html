@@ -28,6 +28,7 @@ const firebaseConfig = {
   appId: "1:203122177163:web:5f7127523ad7fb364c508e",
   measurementId: "G-72STGVJ94V"
 };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -55,10 +56,11 @@ const firebaseConfig = {
             snapshot.forEach(doc => {
               const data = doc.data();
               // sessionStorageに会社情報を保存
-              sessionStorage.setItem("loggedInCompanyId", doc.id);     // 会社ドキュメントID
-              sessionStorage.setItem("loggedInCompanyName", data.name); // 会社名
+              sessionStorage.setItem("loggedInCompanyId", doc.id);
+              sessionStorage.setItem("loggedInCompanyName", data.name);
               alert(`✅ ${data.name} にログインしました`);
-              window.location.href = "fax.html"; // ログイン後のページへ
+              // 同じフォルダに fax.html がある想定
+              window.location.href = "fax.html";
             });
           }
         })
