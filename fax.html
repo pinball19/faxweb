@@ -120,11 +120,20 @@
       max-width: 120px;
       margin-top: 0.5rem;
       display: block;
+      border: 1px solid #ddd;
+    }
+    .fax-item canvas {
+      max-width: 120px; 
+      margin-top: 0.5rem;
+      border: 1px solid #ddd;
+      display: block;
     }
     .fax-item a {
       color: #007aff;
       text-decoration: none;
       font-weight: 500;
+      display: block;
+      margin-top: 0.5rem;
     }
     .fax-item a:hover {
       text-decoration: underline;
@@ -276,6 +285,7 @@
       if (!file) return;
 
       if (file.type.startsWith("image/")) {
+        // 画像の場合
         const reader = new FileReader();
         reader.onload = function(e) {
           const img = document.createElement("img");
@@ -284,7 +294,7 @@
         };
         reader.readAsDataURL(file);
       } else if (file.type === "application/pdf") {
-        // PDFの場合、pdf.jsでサムネイルを生成
+        // PDFの場合
         const fileReader = new FileReader();
         fileReader.onload = function() {
           const typedarray = new Uint8Array(this.result);
@@ -399,30 +409,79 @@
 
       const faxList = document.getElementById("faxList");
       faxList.innerHTML = "";
+
       allMessages.forEach((data) => {
         const timeStr = data.created_at
           ? data.created_at.toDate().toLocaleString()
           : "時間不明";
-        let display = "";
-        if (data.fileType === "application/pdf") {
-          display = `<a href="${data.fileUrl}" target="_blank">PDFを開く</a>`;
-        } else {
-          display = `<img src="${data.fileUrl}">`;
-        }
 
-        // 受信 or 送信 で表示を切り替え
+        // 受信 or 送信 で表示文言を切り替え
         const fromToLabel = (data.type === "受信")
           ? `<strong>受信元:</strong> ${data.sender}<br><strong>受信先:</strong> ${data.recipient}`
           : `<strong>送信元:</strong> ${data.sender}<br><strong>送信先:</strong> ${data.recipient}`;
 
-        faxList.innerHTML += `
-          <div class="fax-item">
-            ${fromToLabel}<br>
-            <strong>時刻:</strong> ${timeStr}<br>
-            ${display}
-          </div>
+        // 親要素を作成
+        const itemDiv = document.createElement("div");
+        itemDiv.classList.add("fax-item");
+        itemDiv.innerHTML = `
+          ${fromToLabel}<br>
+          <strong>時刻:</strong> ${timeStr}
         `;
+
+        // サムネイル or 画像を表示する要素を作成
+        const thumbnailContainer = document.createElement("div");
+
+        if (data.fileType === "application/pdf") {
+          // PDFサムネイル生成
+          renderPdfThumbnail(data.fileUrl, thumbnailContainer);
+          // PDFを開くリンク
+          const pdfLink = document.createElement("a");
+          pdfLink.href = data.fileUrl;
+          pdfLink.target = "_blank";
+          pdfLink.textContent = "PDFを開く";
+          thumbnailContainer.appendChild(pdfLink);
+        } else {
+          // 画像の場合
+          const img = document.createElement("img");
+          img.src = data.fileUrl;
+          thumbnailContainer.appendChild(img);
+        }
+
+        itemDiv.appendChild(thumbnailContainer);
+        faxList.appendChild(itemDiv);
       });
+    }
+
+    // ================================
+    // PDFのサムネイル生成用ヘルパー関数
+    // ================================
+    function renderPdfThumbnail(pdfUrl, container) {
+      // fetch でリモートPDFを取得して、arrayBuffer化
+      fetch(pdfUrl)
+        .then(res => res.arrayBuffer())
+        .then(buffer => {
+          const typedarray = new Uint8Array(buffer);
+          return pdfjsLib.getDocument(typedarray).promise;
+        })
+        .then(pdf => {
+          // 1ページ目を取り出してcanvasに描画
+          return pdf.getPage(1).then(page => {
+            const scale = 0.5; // 縮尺（大きいほど高解像度）
+            const viewport = page.getViewport({ scale: scale });
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            return page.render({ canvasContext: context, viewport: viewport }).promise
+              .then(() => {
+                container.appendChild(canvas);
+              });
+          });
+        })
+        .catch(err => {
+          console.error("PDFサムネイル生成エラー:", err);
+          container.innerHTML = `<p style="color:red;">PDFサムネイルを表示できません</p>`;
+        });
     }
   </script>
 </body>
