@@ -1,33 +1,33 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>ログイン - FAX送受信</title>
-    <!-- Firebase Firestore を参照 -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8">
+  <title>ログイン - FAX送受信</title>
+  <!-- Firebase Firestore を参照 -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <h1>📠 ログイン</h1>
-    <label>ログインID:</label>
-    <input type="text" id="loginId">
-    <label>パスワード:</label>
-    <input type="password" id="password">
-    <button onclick="login()">ログイン</button>
+  <h1>📠 ログイン</h1>
+  <label>ログインID:</label>
+  <input type="text" id="loginId">
+  <label>パスワード:</label>
+  <input type="password" id="password">
+  <button onclick="login()">ログイン</button>
 
-    <script>
+  <script>
     // =============================
     // 1. Firebase 初期化
     // =============================
-const firebaseConfig = {
-  apiKey: "AIzaSyBvANDKuDIMQiCh3DcO1CUFOoMMjiAHAfw",
-  authDomain: "faxweb-1250a.firebaseapp.com",
-  projectId: "faxweb-1250a",
-  storageBucket: "faxweb-1250a.firebasestorage.app",
-  messagingSenderId: "203122177163",
-  appId: "1:203122177163:web:5f7127523ad7fb364c508e",
-  measurementId: "G-72STGVJ94V"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvANDKuDIMQiCh3DcO1CUFOoMMjiAHAfw",
+      authDomain: "faxweb-1250a.firebaseapp.com",
+      projectId: "faxweb-1250a",
+      storageBucket: "faxweb-1250a.firebasestorage.app",
+      messagingSenderId: "203122177163",
+      appId: "1:203122177163:web:5f7127523ad7fb364c508e",
+      measurementId: "G-72STGVJ94V"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -69,6 +69,6 @@ const firebaseConfig = {
           alert("認証エラーが発生しました。");
         });
     }
-    </script>
+  </script>
 </body>
 </html>
