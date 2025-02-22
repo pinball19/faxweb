@@ -1,51 +1,49 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>FAX送受信（会社専用）</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-
-    <!-- PDFのサムネイル生成用 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <meta charset="UTF-8">
+  <title>FAX送受信（会社専用）</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <!-- PDFのサムネイル生成用 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body>
-    <h1>📠 FAX送受信（会社専用）</h1>
-    <h3>現在の会社: <span id="currentCompany"></span></h3>
-    <button onclick="logout()">🔲 ログアウト</button>
+  <h1>📠 FAX送受信（会社専用）</h1>
+  <h3>現在の会社: <span id="currentCompany"></span></h3>
+  <button onclick="logout()">🔲 ログアウト</button>
 
-    <!-- 送信機能 -->
-    <h1>📠 FAX送信</h1>
-    <label>送信先FAX番号:</label>
-    <input type="text" id="recipientFaxNumber" oninput="findRecipientByContact()">
-    <label>LINE ID:</label>
-    <input type="text" id="recipientLineId" oninput="findRecipientByContact()">
-    <label>メールアドレス:</label>
-    <input type="text" id="recipientEmail" oninput="findRecipientByContact()">
-    <h3 id="recipientCompanyName">送信先会社名: （未入力）</h3>
-    <input type="file" id="fileInput" accept="image/*,application/pdf">
-    <button onclick="sendFax()">📤 送信</button>
+  <!-- 送信機能 -->
+  <h1>📠 FAX送信</h1>
+  <label>送信先FAX番号:</label>
+  <input type="text" id="recipientFaxNumber" oninput="findRecipientByContact()">
+  <label>LINE ID:</label>
+  <input type="text" id="recipientLineId" oninput="findRecipientByContact()">
+  <label>メールアドレス:</label>
+  <input type="text" id="recipientEmail" oninput="findRecipientByContact()">
+  <h3 id="recipientCompanyName">送信先会社名: （未入力）</h3>
+  <input type="file" id="fileInput" accept="image/*,application/pdf">
+  <button onclick="sendFax()">📤 送信</button>
 
-    <h1>📥 受信一覧（最新順）</h1>
-    <div id="faxList"></div>
+  <h1>📥 受信一覧（最新順）</h1>
+  <div id="faxList"></div>
 
-    <script>
+  <script>
     // ================================
     // Firebase 初期化
     // ================================
-    // if (!firebase.apps.length) ... の処理を加味
     if (!firebase.apps.length) {
-const firebaseConfig = {
-  apiKey: "AIzaSyBvANDKuDIMQiCh3DcO1CUFOoMMjiAHAfw",
-  authDomain: "faxweb-1250a.firebaseapp.com",
-  projectId: "faxweb-1250a",
-  storageBucket: "faxweb-1250a.firebasestorage.app",
-  messagingSenderId: "203122177163",
-  appId: "1:203122177163:web:5f7127523ad7fb364c508e",
-  measurementId: "G-72STGVJ94V"
-};
-
+      const firebaseConfig = {
+        apiKey: "AIzaSyBvANDKuDIMQiCh3DcO1CUFOoMMjiAHAfw",
+        authDomain: "faxweb-1250a.firebaseapp.com",
+        projectId: "faxweb-1250a",
+        storageBucket: "faxweb-1250a.firebasestorage.app",
+        messagingSenderId: "203122177163",
+        appId: "1:203122177163:web:5f7127523ad7fb364c508e",
+        measurementId: "G-72STGVJ94V"
+      };
       firebase.initializeApp(firebaseConfig);
     }
 
@@ -56,15 +54,15 @@ const firebaseConfig = {
     // ページ読み込み時にログイン状態をチェック
     // ================================
     window.onload = function() {
-      const companyId = sessionStorage.getItem(\"loggedInCompanyId\");
-      const companyName = sessionStorage.getItem(\"loggedInCompanyName\");
+      const companyId = sessionStorage.getItem("loggedInCompanyId");
+      const companyName = sessionStorage.getItem("loggedInCompanyName");
 
       if (!companyId || !companyName) {
-        alert(\"ログインが必要です。\");
-        window.location.href = \"index.html\";
+        alert("ログインが必要です。");
+        window.location.href = "index.html";
         return;
       }
-      document.getElementById(\"currentCompany\").textContent = companyName;
+      document.getElementById("currentCompany").textContent = companyName;
       loadReceivedFaxes(companyName);
     };
 
@@ -72,95 +70,98 @@ const firebaseConfig = {
     // ログアウト
     // ================================
     function logout() {
-      sessionStorage.removeItem(\"loggedInCompanyId\");
-      sessionStorage.removeItem(\"loggedInCompanyName\");
-      window.location.href = \"index.html\";
+      sessionStorage.removeItem("loggedInCompanyId");
+      sessionStorage.removeItem("loggedInCompanyName");
+      window.location.href = "index.html";
     }
 
     // ================================
     // 送信先会社の検索
     // ================================
     function findRecipientByContact() {
-      const faxNumber = document.getElementById(\"recipientFaxNumber\").value.trim();
-      const lineId = document.getElementById(\"recipientLineId\").value.trim();
-      const email = document.getElementById(\"recipientEmail\").value.trim();
-      const companyNameElem = document.getElementById(\"recipientCompanyName\");
+      const faxNumber = document.getElementById("recipientFaxNumber").value.trim();
+      const lineId = document.getElementById("recipientLineId").value.trim();
+      const email = document.getElementById("recipientEmail").value.trim();
+      const companyNameElem = document.getElementById("recipientCompanyName");
 
-      db2.collection(\"companies\").get().then(snapshot => {
-        let matched = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          if (
-            (faxNumber && data.faxNumber === faxNumber) ||
-            (lineId && data.lineId === lineId) ||
-            (email && data.email === email)
-          ) {
-            matched.push(data.name);
-          }
+      db2.collection("companies")
+        .get()
+        .then((snapshot) => {
+          let matched = [];
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            if (
+              (faxNumber && data.faxNumber === faxNumber) ||
+              (lineId && data.lineId === lineId) ||
+              (email && data.email === email)
+            ) {
+              matched.push(data.name);
+            }
+          });
+          companyNameElem.textContent =
+            matched.length > 0
+              ? `送信先会社名: ${matched.join(", ")}`
+              : "送信先会社名: （該当なし）";
+        })
+        .catch((err) => {
+          console.error("❌ 会社検索エラー:", err);
         });
-        companyNameElem.textContent =
-          matched.length > 0
-            ? `送信先会社名: ${matched.join(\", \")}`
-            : \"送信先会社名: （該当なし）\";
-      }).catch(err => {
-        console.error(\"❌ 会社検索エラー:\", err);
-      });
     }
 
     // ================================
     // FAX送信処理
     // ================================
     function sendFax() {
-      const senderName = sessionStorage.getItem(\"loggedInCompanyName\"); // 送信元
+      const senderName = sessionStorage.getItem("loggedInCompanyName"); // 送信元
       const recipientName = document
-        .getElementById(\"recipientCompanyName\")
-        .textContent.replace(\"送信先会社名: \", \"\")
+        .getElementById("recipientCompanyName")
+        .textContent.replace("送信先会社名: ", "")
         .trim();
-      const fileInput = document.getElementById(\"fileInput\").files[0];
+      const fileInput = document.getElementById("fileInput").files[0];
 
-      if (!recipientName || recipientName === \"（未入力）\" || !fileInput) {
-        alert(\"送信先会社が特定できないか、ファイルが選択されていません。\");
+      if (!recipientName || recipientName === "（未入力）" || !fileInput) {
+        alert("送信先会社が特定できないか、ファイルが選択されていません。");
         return;
       }
 
       const storageRef = storage.ref().child(`fax_files/${Date.now()}_${fileInput.name}`);
       storageRef
         .put(fileInput)
-        .then(snap => snap.ref.getDownloadURL())
-        .then(url => {
-          return db2.collection(\"fax_messages\").add({
+        .then((snap) => snap.ref.getDownloadURL())
+        .then((url) => {
+          return db2.collection("fax_messages").add({
             sender: senderName,
             recipient: recipientName,
             fileUrl: url,
             fileType: fileInput.type,
-            created_at: firebase.firestore.FieldValue.serverTimestamp()
+            created_at: firebase.firestore.FieldValue.serverTimestamp(),
           });
         })
         .then(() => {
           alert(`✅ ${recipientName} へ FAXを送信しました！`);
           loadReceivedFaxes(senderName);
         })
-        .catch(err => {
-          console.error(\"❌ 送信エラー:\", err);
-          alert(\"送信に失敗しました\");
+        .catch((err) => {
+          console.error("❌ 送信エラー:", err);
+          alert("送信に失敗しました");
         });
     }
 
     // ================================
-    // 受信一覧を取得（recipientがログイン会社名と一致するもの）
+    // 受信一覧を取得
     // ================================
     function loadReceivedFaxes(companyName) {
-      db2.collection(\"fax_messages\")
-        .where(\"recipient\", \"==\", companyName)
-        .orderBy(\"created_at\", \"desc\")
+      db2.collection("fax_messages")
+        .where("recipient", "==", companyName)
+        .orderBy("created_at", "desc")
         .get()
-        .then(snapshot => {
-          const faxList = document.getElementById(\"faxList\");
-          faxList.innerHTML = \"\";
-          snapshot.forEach(doc => {
+        .then((snapshot) => {
+          const faxList = document.getElementById("faxList");
+          faxList.innerHTML = "";
+          snapshot.forEach((doc) => {
             const data = doc.data();
-            let display = \"\";
-            if (data.fileType === \"application/pdf\") {
+            let display = "";
+            if (data.fileType === "application/pdf") {
               display = `<a href=\"${data.fileUrl}\" target=\"_blank\">📄 PDFを開く</a>`;
             } else {
               display = `<img src=\"${data.fileUrl}\" width=\"150\">`;
@@ -175,10 +176,10 @@ const firebaseConfig = {
             `;
           });
         })
-        .catch(err => {
-          console.error(\"❌ 受信一覧エラー:\", err);
+        .catch((err) => {
+          console.error("❌ 受信一覧エラー:", err);
         });
     }
-    </script>
+  </script>
 </body>
 </html>
