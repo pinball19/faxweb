@@ -2,22 +2,115 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>ログイン - FAX送受信</title>
-  <!-- Firebase Firestore を参照 -->
+  <title>Fax Web - ログイン</title>
+  <!-- Firebase Firestore SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* ---------------------------
+       Apple公式サイト風の
+       シンプル＆洗練デザイン
+    ---------------------------- */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+                   "Roboto", "Segoe UI", "Noto Sans Japanese", sans-serif;
+      color: #333;
+      background-color: #fff;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid #eee;
+    }
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    main {
+      max-width: 400px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    label {
+      display: inline-block;
+      margin-top: 1rem;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    button {
+      margin-top: 2rem;
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background-color: #007aff;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover {
+      background-color: #005bb5;
+    }
+
+    footer {
+      text-align: center;
+      color: #999;
+      font-size: 0.8rem;
+      margin-top: 2rem;
+    }
+  </style>
 </head>
 <body>
-  <h1>📠 ログイン</h1>
-  <label>ログインID:</label>
-  <input type="text" id="loginId">
-  <label>パスワード:</label>
-  <input type="password" id="password">
-  <button onclick="login()">ログイン</button>
+
+  <header>
+    <h1>Fax Web</h1>
+  </header>
+
+  <main>
+    <h2>ログイン</h2>
+
+    <label for="loginId">ユーザーID</label>
+    <input type="text" id="loginId" placeholder="例: user001">
+
+    <label for="password">パスワード</label>
+    <input type="password" id="password" placeholder="********">
+
+    <button onclick="login()">ログイン</button>
+  </main>
+
+  <footer>
+    <p>© 2023 Fax Web</p>
+  </footer>
 
   <script>
     // =============================
-    // 1. Firebase 初期化
+    // Firebase 初期化
     // =============================
     const firebaseConfig = {
       apiKey: "AIzaSyBvANDKuDIMQiCh3DcO1CUFOoMMjiAHAfw",
@@ -33,17 +126,16 @@
     const db = firebase.firestore();
 
     // =============================
-    // 2. Firestoreで loginId, password を照合
+    // Firestoreで loginId, password を照合
     // =============================
     function login() {
       const inputId = document.getElementById("loginId").value.trim();
       const inputPass = document.getElementById("password").value.trim();
       if (!inputId || !inputPass) {
-        alert("ログインIDとパスワードを入力してください。");
+        alert("ユーザーIDとパスワードを入力してください。");
         return;
       }
 
-      // Firestore の companies コレクションから照合
       db.collection("companies")
         .where("loginId", "==", inputId)
         .where("password", "==", inputPass)
@@ -52,14 +144,11 @@
           if (snapshot.empty) {
             alert("ログインに失敗しました。");
           } else {
-            // 複数ヒットした場合、最初の1件のみでOK
             snapshot.forEach(doc => {
               const data = doc.data();
-              // sessionStorageに会社情報を保存
               sessionStorage.setItem("loggedInCompanyId", doc.id);
               sessionStorage.setItem("loggedInCompanyName", data.name);
               alert(`✅ ${data.name} にログインしました`);
-              // 同じフォルダに fax.html がある想定
               window.location.href = "fax.html";
             });
           }
@@ -70,5 +159,6 @@
         });
     }
   </script>
+
 </body>
 </html>
