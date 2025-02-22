@@ -3,26 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <title>ログイン - FAX送受信</title>
+    <!-- Firebase Firestore を参照 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <h1>📠 ログイン</h1>
-    <label>会社ID:</label>
-    <input type="text" id="companyId">
+    <label>ログインID:</label>
+    <input type="text" id="loginId">
     <label>パスワード:</label>
     <input type="password" id="password">
     <button onclick="login()">ログイン</button>
 
     <script>
-        function login() {
-            const companyId = document.getElementById("companyId").value;
-            const password = document.getElementById("password").value;
-            if (companyId && password) {
-                sessionStorage.setItem("loggedInCompany", companyId);
-                window.location.href = "fax.html"; // 送受信ページに遷移
-            } else {
-                alert("会社IDとパスワードを入力してください。");
-            }
-        }
+    // =============================
+    // 1. Firebase 初期化
+    // =============================
+const firebaseConfig = {
+  apiKey: "AIzaSyBvANDKuDIMQiCh3DcO1CUFOoMMjiAHAfw",
+  authDomain: "faxweb-1250a.firebaseapp.com",
+  projectId: "faxweb-1250a",
+  storageBucket: "faxweb-1250a.firebasestorage.app",
+  messagingSenderId: "203122177163",
+  appId: "1:203122177163:web:5f7127523ad7fb364c508e",
+  measurementId: "G-72STGVJ94V"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // =============================
+    // 2. Firestoreで loginId, password を照合
+    // =============================
+    function login() {
+      const inputId = document.getElementById("loginId").value.trim();
+      const inputPass = document.getElementById("password").value.trim();
+      if (!inputId || !inputPass) {
+        alert("ログインIDとパスワードを入力してください。");
+        return;
+      }
+
+      // Firestore の companies コレクションから照合
+      db.collection("companies")
+        .where("loginId", "==", inputId)
+        .where("password", "==", inputPass)
+        .get()
+        .then(snapshot => {
+          if (snapshot.empty) {
+            alert("ログインに失敗しました。");
+          } else {
+            // 複数ヒットした場合、最初の1件のみでOK
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              // sessionStorageに会社情報を保存
+              sessionStorage.setItem("loggedInCompanyId", doc.id);     // 会社ドキュメントID
+              sessionStorage.setItem("loggedInCompanyName", data.name); // 会社名
+              alert(`✅ ${data.name} にログインしました`);
+              window.location.href = "fax.html"; // ログイン後のページへ
+            });
+          }
+        })
+        .catch(error => {
+          console.error("❌ Firestore 認証エラー:", error);
+          alert("認証エラーが発生しました。");
+        });
+    }
     </script>
 </body>
 </html>
